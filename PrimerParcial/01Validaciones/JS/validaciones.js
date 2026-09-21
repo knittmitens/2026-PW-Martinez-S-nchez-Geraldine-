@@ -45,7 +45,7 @@ form.addEventListener("submit", function(evento) {
         errorNombre.textContent = "";
     }
 
-    var expresionBoleta = /^[0-9]{10,11}$/;
+    var expresionBoleta = /^[0-9]{10}$/;
     if (!expresionBoleta.test(boleta.value.trim())) {
         boleta.classList.add("input-invalido");
         errorBoleta.textContent = "Por favor, ingresa una boleta válida (solo números, 10 dígitos).";
