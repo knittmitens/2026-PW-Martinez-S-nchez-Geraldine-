@@ -1,0 +1,94 @@
+/* Estilos globales - Primer Proyecto Next.js */
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    color: #1d2836;
+    background-color: #f9fafb;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 24px;
+    background: #6b1d3a;
+}
+
+nav a,
+nav button {
+    color: #fff;
+    font-size: 15px;
+    text-decoration: none;
+}
+
+nav button {
+    margin-left: auto;
+    padding: 4px 10px;
+    border: 1px solid #fff;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+}
+
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 360px;
+    margin-bottom: 24px;
+}
+
+
+input {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+}
+
+button { 
+    padding: 6px 12px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background: #6b1d3a;
+    color: white;
+    transition: background 0.2s;
+}
+
+button:hover:not(:disabled) {
+    background: #4a1429;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+th,
+td{
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    text-align: left;
+}
+
+th {
+    background: #f3f4f6;
+    font-weight: 600;
+}
+
+.error {
+    color: #b91c1c;
+    font-weight: 500;
+}
