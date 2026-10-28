@@ -39,13 +39,13 @@ async function eliminar(id) {
 }
 
 //buscar correo
-async function buscarCorreoConHash(correo) {
+async function buscarPorCorreoConHash(correo) {
     const [filas] = await pool.query(`SELECT * FROM usuarios WHERE correo = ?`, [correo]);
     return filas[0];
 }
 
 //buscar boleta
-async function buscarBoleta(boleta) {
+async function buscarPorBoleta(boleta) {
     const [filas] = await pool.query(
         `SELECT id, nombre, correo, boleta, rol FROM usuarios WHERE boleta = ?`,
         [boleta]

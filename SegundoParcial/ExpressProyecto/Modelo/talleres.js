@@ -1,6 +1,6 @@
 const pool = require('../db-local');
 
-const COLUMNAS_PUBLICAS = 'id, nombre, descripcion, instructor, fecha, cupo, create_at';
+const COLUMNAS_PUBLICAS = 'id, nombre, descripcion, instructor, fecha, cupo, created_at';
 
 //consultar los talleres
 async function listar() {

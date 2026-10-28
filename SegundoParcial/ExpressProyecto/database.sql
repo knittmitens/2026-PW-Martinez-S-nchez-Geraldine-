@@ -6,7 +6,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
 
     USE cecyt9;
 
-    --USUARIOS
+    -- USUARIOS
     CREATE TABLE IF NOT EXISTS usuarios (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
@@ -18,7 +18,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
     ) ENGINE=InnoDB;
 
 
-    --talleres 
+    -- talleres 
 
     CREATE TABLE IF NOT EXISTS talleres (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -30,12 +30,14 @@ CREATE DATABASE IF NOT EXISTS cecyt9
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
 
-    --ASISTENCIAS
+    -- ASISTENCIAS
 
     CREATE TABLE IF NOT EXISTS asistencias (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        usuario_id INT NOT NULL,
+        usuario_id INT NULL,
         taller_id INT NOT NULL,
+        nombre_alumno VARCHAR(100) NULL,
+        boleta VARCHAR(10) NULL,
         fecha_asistencia TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -75,4 +77,3 @@ INSERT INTO asistencias (usuario_id, taller_id) VALUES
     (6, 1),
     (8, 4),
     (8, 5);
-
