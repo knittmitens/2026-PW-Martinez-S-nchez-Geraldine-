@@ -78,4 +78,20 @@ async function crearAsistencia(req, res) {
     }
 }
 
-module.exports = { ListarAsistencias, ListarAsistenciasPorTaller, obtenerAsistencia, crearAsistencia };
+async function eliminarAsistencia(req, res) {
+    try {
+        const eliminada = await asistenciasModel.eliminar(req.params.id);
+        if (!eliminada) return res.status(404).json({ error: 'Asistencia no encontrada' });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+module.exports = {
+    ListarAsistencias,
+    ListarAsistenciasPorTaller,
+    obtenerAsistencia,
+    crearAsistencia,
+    eliminarAsistencia
+};

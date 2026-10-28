@@ -24,7 +24,7 @@ async function obtenerTaller(req, res) {
 //registrar taller
 async function crearTaller(req, res) {
     const {nombre, descripcion, instructor, fecha, cupo} = req.body;
-    if(nombre || !fecha){
+    if(!nombre || !fecha){
         return res.status(400).json({ error: 'El nombre y fecha son obligatorios' });
     }
     try {

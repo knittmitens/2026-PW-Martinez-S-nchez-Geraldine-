@@ -9,10 +9,13 @@ const app = express();
 
 app.use(express.json());
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 app.get('/api/talleres', talleresControlador.ListarTalleres);
 app.get('/api/talleres/:id', talleresControlador.obtenerTaller);
+app.post('/api/talleres', talleresControlador.crearTaller);
+app.put('/api/talleres/:id', talleresControlador.actualizarTaller);
+app.delete('/api/talleres/:id', talleresControlador.eliminarTaller);
 
 // Alias para consultar las asistencias de un taller
 app.get('/api/talleres/:id/asistencias', (req, res) => {
@@ -23,9 +26,13 @@ app.get('/api/talleres/:id/asistencias', (req, res) => {
 app.get('/api/asistencias', asistenciasControlador.ListarAsistencias);
 app.get('/api/asistencias/:id', asistenciasControlador.obtenerAsistencia);
 app.post('/api/asistencias', asistenciasControlador.crearAsistencia);
+app.delete('/api/asistencias/:id', asistenciasControlador.eliminarAsistencia);
 
 app.get('/api/usuarios', usuariosControlador.ListarUsuario);
 app.get('/api/usuarios/:id', usuariosControlador.obtenerUsuario);
+app.post('/api/usuarios', usuariosControlador.crearUsuario);
+app.put('/api/usuarios/:id', usuariosControlador.actualizarUsuario);
+app.delete('/api/usuarios/:id', usuariosControlador.eliminarUsuario);
 
 //ruta principal por metodo get
 app.get('/saludo', (req, res) => {
