@@ -41,6 +41,10 @@ app.post('/eco', (req, res) => {
     res.status(201).json({ eco:texto })
 });
 
+app.get('/', (req, res) => {
+    res.json({ mensaje: 'API de reegistro de asistencia - CECyT 9 funcionando correctamente' });
+});
+
 app.listen(PORT, () => {
     console.log(`Mini servidor express en http://localhost:${PORT}`);
     console.log(`   GET http://localhost:${PORT}/saludo`);
