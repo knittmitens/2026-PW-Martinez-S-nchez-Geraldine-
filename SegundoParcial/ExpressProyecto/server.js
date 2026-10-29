@@ -1,13 +1,15 @@
 //recie las peticiones y las manda a donde toque
 
 const express = require('express');
+const cors = require('cors');
 const asistenciasControlador = require('./Controlador/asistencias_controlador');
 const talleresControlador = require('./Controlador/talleres_controlador');
 const usuariosControlador = require('./Controlador/usuarios_controlador');
 
 const app = express();
 
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '10kb' }));
 
 const PORT = process.env.PORT || 4000;
 
@@ -29,6 +31,7 @@ app.post('/api/asistencias', asistenciasControlador.crearAsistencia);
 app.delete('/api/asistencias/:id', asistenciasControlador.eliminarAsistencia);
 
 app.get('/api/usuarios', usuariosControlador.ListarUsuario);
+app.get('/api/usuarios/boleta/:boleta', usuariosControlador.obtenerPorBoleta);
 app.get('/api/usuarios/:id', usuariosControlador.obtenerUsuario);
 app.post('/api/usuarios', usuariosControlador.crearUsuario);
 app.put('/api/usuarios/:id', usuariosControlador.actualizarUsuario);

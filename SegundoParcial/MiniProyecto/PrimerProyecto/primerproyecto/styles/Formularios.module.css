@@ -1,0 +1,18 @@
+.formulario {
+  max-width: 480px;
+}
+
+.formulario label {
+  font-weight: 600;
+}
+
+.formulario textarea {
+  padding: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.exito {
+  color: #166534;
+  font-weight: 600;
+}

@@ -5,8 +5,9 @@ export default function Menu(){
         <nav>
             <Link href="/" >Inicio</Link>
             <Link href="/talleres" >Talleres</Link>
+            <Link href="/talleres/crear">Crear taller</Link>
+            <Link href="/usuarios/nuevo">Registrar usuario</Link>
             <Link href="/perfil" >Mi perfil</Link>
-            <Link href="/mini-servidor" >Mini servidor</Link>
         </nav>
     );
 }

@@ -1,6 +1,29 @@
 const bcrypt = require('bcryptjs');
 const usuariosModel = require('../Modelo/usuarios');
-const { validarCorreo, validarBoleta, validarContrasena} = require('../validaciones');
+const { validarCorreo, validarBoleta } = require('../validaciones');
+
+function camposString(req, nombres) {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return undefined;
+    const campos = {};
+    for (const nombre of nombres) {
+        if (typeof req.body[nombre] !== 'string') return undefined;
+        campos[nombre] = req.body[nombre].trim();
+    }
+    return campos;
+}
+
+function validarNombre(nombre) {
+    return nombre.length >= 3
+        && nombre.length <= 100
+        && /^(?=.*\p{L})[\p{L}\p{M} ]+$/u.test(nombre);
+}
+
+function validarContrasena(contrasena) {
+    return contrasena.length >= 8
+        && contrasena.length <= 64
+        && !/\s/u.test(contrasena)
+        && !/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{20E3}\u{E0020}-\u{E007F}]/u.test(contrasena);
+}
 
 //correo y boleta duplicados
 function esDuplicado(error) {
@@ -27,21 +50,50 @@ async function obtenerUsuario(req, res) {
 }
 
 async function crearUsuario(req, res) {
-    const {nombre, correo, boleta, contrasena, rol} = req.body;
-    if (!nombre || !correo || !boleta || !contrasena) {
+    const campos = camposString(req, ['nombre', 'correo', 'contrasena', 'boleta']);
+    if (!campos) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
-    if (!validarCorreo(correo)) return res.status(400).json({ error: 'Correo inválido' });
-    if (!validarBoleta(boleta)) return res.status(400).json({ error: 'Boleta inválida' });
-    if (!validarContrasena(contrasena)) return res.status(400).json({ error: 'Contraseña inválida' });
+    const { nombre, correo, contrasena, boleta } = campos;
+    if (!validarNombre(nombre)) {
+        return res.status(400).json({ error: 'El nombre debe tener entre 3 y 100 letras y espacios' });
+    }
+    if (correo.length > 100 || /\s/u.test(correo) || !validarCorreo(correo)) {
+        return res.status(400).json({ error: 'Correo inválido; debe tener máximo 100 caracteres' });
+    }
+    if (!validarContrasena(contrasena)) {
+        return res.status(400).json({ error: 'La contraseña debe tener entre 8 y 64 caracteres, sin espacios ni emojis' });
+    }
+    if (!validarBoleta(boleta)) {
+        return res.status(400).json({ error: 'Boleta inválida; debe contener exactamente 10 dígitos' });
+    }
     try {
         const contrasenaHash = await bcrypt.hash(contrasena, 10);
-        const usuario = await usuariosModel.crear({nombre, correo, boleta, contrasenaHash, rol});
-
+        const usuario = await usuariosModel.crearUsuario(nombre, correo, contrasenaHash, boleta);
         res.status(201).json(usuario);
     } catch (error) {
         if (esDuplicado(error)) return res.status(409).json({ error: 'Correo o boleta ya registrado' });
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+}
+
+async function obtenerPorBoleta(req, res) {
+    const campos = camposString({ body: { boleta: req.params.boleta } }, ['boleta']);
+    if (!campos || !validarBoleta(campos.boleta)) {
+        return res.status(400).json({ error: 'Boleta inválida; debe contener exactamente 10 dígitos' });
+    }
+    try {
+        const usuario = await usuariosModel.obtenerPorBoleta(campos.boleta);
+        if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json({
+            id: usuario.id,
+            nombre: usuario.nombre,
+            correo: usuario.correo,
+            boleta: usuario.boleta,
+            rol: usuario.rol
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 }
 async function actualizarUsuario(req, res) {
@@ -72,4 +124,4 @@ async function eliminarUsuario(req, res) {
         res.status(500).json({ error: error.message });
     }
 }   
-module.exports = { ListarUsuario, obtenerUsuario, crearUsuario, actualizarUsuario, eliminarUsuario };
+module.exports = { ListarUsuario, obtenerUsuario, crearUsuario, obtenerPorBoleta, actualizarUsuario, eliminarUsuario };

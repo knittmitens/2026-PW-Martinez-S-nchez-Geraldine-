@@ -21,6 +21,14 @@ async function crear({nombre, correo, contrasenaHash, boleta, rol}) {
     return obtenerPorId(info.insertId);
 }
 
+async function crearUsuario(nombre, correo, contrasenaHash, boleta) {
+    const [info] = await pool.query(
+        `INSERT INTO usuarios (nombre, correo, contrasena, boleta) VALUES (?, ?, ?, ?)`,
+        [nombre, correo, contrasenaHash, boleta]
+    );
+    return obtenerPorId(info.insertId);
+}
+
 //actualiza alumno
 async function actualizar(id, {nombre, correo, rol}) {
     const cambios = Object.entries({nombre, correo, rol}).filter(([, valor]) => valor !== undefined);
@@ -53,4 +61,12 @@ async function buscarPorBoleta(boleta) {
     return filas[0];
 }
 
-module.exports = {listar, obtenerPorId, crear, actualizar, eliminar, buscarPorCorreoConHash, buscarPorBoleta};
+async function obtenerPorBoleta(boleta) {
+    const [filas] = await pool.query(
+        `SELECT id, nombre, correo, boleta, rol FROM usuarios WHERE boleta = ?`,
+        [boleta]
+    );
+    return filas[0];
+}
+
+module.exports = {listar, obtenerPorId, crear, crearUsuario, actualizar, eliminar, buscarPorCorreoConHash, buscarPorBoleta, obtenerPorBoleta};

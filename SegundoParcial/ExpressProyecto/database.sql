@@ -10,12 +10,11 @@ CREATE DATABASE IF NOT EXISTS cecyt9
     CREATE TABLE IF NOT EXISTS usuarios (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
-        correo VARCHAR(150) NOT NULL UNIQUE,
-        boleta VARCHAR(10) NOT NULL UNIQUE,
-        rol ENUM('alumno', 'docente', 'admin') DEFAULT 'alumno',
-        contrasena_hash VARCHAR(255) NOT NULL,
-        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB;
+        correo VARCHAR(100) NOT NULL UNIQUE,
+        contrasena VARCHAR(255) NOT NULL,
+        boleta CHAR(10) NOT NULL UNIQUE,
+        rol VARCHAR(20) NOT NULL DEFAULT 'alumno'
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 
 
     -- talleres 
@@ -48,7 +47,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
 
     -- DATOS RANDOM PARA PRUEBAS
 
-    INSERT INTO usuarios (nombre, correo, boleta, rol, contrasena_hash) VALUES
+    INSERT INTO usuarios (nombre, correo, boleta, rol, contrasena) VALUES
     ('Control Escolar', 'control@cecyt9.local', '2026000011', 'admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
     ('Ricardo Gomez Cruz', 'ricardo.gomez@alumno.cecyt9.local', '2026000012', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
     ('Patricia Flores Mejia', 'patricia.flores@alumno.cecyt9.local', '2026000013', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
@@ -59,8 +58,8 @@ CREATE DATABASE IF NOT EXISTS cecyt9
     ('Andres Esparza Nova', 'andres.esparza@alumno.cecyt9.local', '2026000018', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
     INSERT INTO talleres (nombre, descripcion, instructor, fecha, cupo) VALUES
-    ('Fundamentos de Linux', 'Introducción a la terminal y comandos básicos del sistema', 'Ing. Cosme Fulanito De Tal', '2026-04-15', 30),
-    ('Ciberseguridad 101', 'Principios esenciales de seguridad informática y hacking ético', 'Ing. Max Power Simpson', '2026-04-15', 25),
+    ('Fundamentos de Linux', 'Introducción a la terminal y comandos básicos del sistema', 'Ing. Cosme Fulanito De Tal', '2026-10-28', 30),
+    ('Ciberseguridad 101', 'Principios esenciales de seguridad informática y hacking ético', 'Ing. Max Power Simpson', '2026-10-29', 25),
     ('Desarrollo en Flutter', 'Creación de aplicaciones móviles nativas para iOS y Android', 'Ing. El Chavo Del Ocho', '2026-04-15', 20),
     ('Backend con Node.js', 'Construcción de APIs REST eficientes y escalables', 'Ing. Laura Flores', '2026-05-10', 35),
     ('Modelado de Datos NoSQL', 'Estructura de bases de datos no relacionales con MongoDB', 'Ing. Ricardo Medina', '2026-05-20', 25),
