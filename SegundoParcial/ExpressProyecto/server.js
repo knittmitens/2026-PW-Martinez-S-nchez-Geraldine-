@@ -30,7 +30,7 @@ app.get('/api/asistencias/:id', asistenciasControlador.obtenerAsistencia);
 app.post('/api/asistencias', asistenciasControlador.crearAsistencia);
 app.delete('/api/asistencias/:id', asistenciasControlador.eliminarAsistencia);
 
-app.get('/api/usuarios', usuariosControlador.ListarUsuario);
+app.get('/api/usuarios', usuariosControlador.ListarUsuarios);
 app.get('/api/usuarios/boleta/:boleta', usuariosControlador.obtenerPorBoleta);
 app.get('/api/usuarios/:id', usuariosControlador.obtenerUsuario);
 app.post('/api/usuarios', usuariosControlador.crearUsuario);
@@ -53,6 +53,14 @@ app.post('/eco', (req, res) => {
 
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de reegistro de asistencia - CECyT 9 funcionando correctamente' });
+});
+
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
+        return res.status(400).json({ error: 'El JSON enviado es inválido o demasiado grande' });
+    }
+    res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 app.listen(PORT, () => {

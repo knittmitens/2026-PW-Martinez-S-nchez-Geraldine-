@@ -1,24 +1,18 @@
 const pool = require('../db-local');
 
-const COLUMNAS_PUBLICAS = 'id, nombre, correo, boleta, rol';
-
-//consultar todos los usuarios
-async function listar() {
-    const [filas] = await pool.query(`SELECT ${COLUMNAS_PUBLICAS} FROM usuarios ORDER BY id`);
+async function listarUsuarios() {
+    const [filas] = await pool.query(
+        'SELECT id, nombre, boleta FROM usuarios ORDER BY nombre'
+    );
     return filas;
 }
 
-//consultar ID
 async function obtenerPorId(id) {
-    const [filas] = await pool.query(`SELECT ${COLUMNAS_PUBLICAS} FROM usuarios WHERE id = ?`, [id]);
+    const [filas] = await pool.query(
+        'SELECT id, nombre, correo, boleta, rol FROM usuarios WHERE id = ?',
+        [id]
+    );
     return filas[0];
-}
-
-//registrar usuario
-async function crear({nombre, correo, contrasenaHash, boleta, rol}) {
-    const [info] = await pool.query(`INSERT INTO usuarios (nombre, correo, contrasena_hash, boleta, rol) VALUES(?, ?, ?, ?, ?)`,
-    [nombre, correo, contrasenaHash, boleta, rol || 'alumno']);
-    return obtenerPorId(info.insertId);
 }
 
 async function crearUsuario(nombre, correo, contrasenaHash, boleta) {
@@ -29,36 +23,31 @@ async function crearUsuario(nombre, correo, contrasenaHash, boleta) {
     return obtenerPorId(info.insertId);
 }
 
-//actualiza alumno
 async function actualizar(id, {nombre, correo, rol}) {
-    const cambios = Object.entries({nombre, correo, rol}).filter(([, valor]) => valor !== undefined);
-    if(cambios.length === 0) return obtenerPorId(id);
+    if (nombre === undefined && correo === undefined && rol === undefined) {
+        return obtenerPorId(id);
+    }
 
-    const columnas = cambios.map(([columna]) => `${columna} = ?`).join(', ');
-    const [info] = await pool.query(`UPDATE usuarios SET ${columnas} WHERE id = ?`, [...cambios.map(([, valor]) => valor), id]);
+    const [info] = await pool.query(
+        `UPDATE usuarios
+         SET nombre = CASE WHEN ? = 1 THEN ? ELSE nombre END,
+             correo = CASE WHEN ? = 1 THEN ? ELSE correo END,
+             rol = CASE WHEN ? = 1 THEN ? ELSE rol END
+         WHERE id = ?`,
+        [
+            nombre === undefined ? 0 : 1, nombre === undefined ? null : nombre,
+            correo === undefined ? 0 : 1, correo === undefined ? null : correo,
+            rol === undefined ? 0 : 1, rol === undefined ? null : rol,
+            id
+        ]
+    );
     if(info.affectedRows === 0) return undefined;
     return obtenerPorId(id);
 }
 
-//eliminar
 async function eliminar(id) {
     const [filas] = await pool.query(`DELETE FROM usuarios WHERE id = ?`, [id]);
     return filas.affectedRows > 0;
-}
-
-//buscar correo
-async function buscarPorCorreoConHash(correo) {
-    const [filas] = await pool.query(`SELECT * FROM usuarios WHERE correo = ?`, [correo]);
-    return filas[0];
-}
-
-//buscar boleta
-async function buscarPorBoleta(boleta) {
-    const [filas] = await pool.query(
-        `SELECT id, nombre, correo, boleta, rol FROM usuarios WHERE boleta = ?`,
-        [boleta]
-    );
-    return filas[0];
 }
 
 async function obtenerPorBoleta(boleta) {
@@ -69,4 +58,11 @@ async function obtenerPorBoleta(boleta) {
     return filas[0];
 }
 
-module.exports = {listar, obtenerPorId, crear, crearUsuario, actualizar, eliminar, buscarPorCorreoConHash, buscarPorBoleta, obtenerPorBoleta};
+module.exports = {
+    listarUsuarios,
+    obtenerPorId,
+    crearUsuario,
+    obtenerPorBoleta,
+    actualizar,
+    eliminar
+};

@@ -1,23 +1,12 @@
 import { useState } from 'react';
 import { pedirJSON } from '../../lib/api';
 import estilos from '../../styles/Formularios.module.css';
-
-function validarCorreo(correo) {
-  if (correo.length > 100 || /\s/u.test(correo)) return false;
-  const partes = correo.split('@');
-  if (partes.length !== 2) return false;
-
-  const [local, dominio] = partes;
-  const patronLocal = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
-  const patronDominio = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-  return local.length <= 64
-    && patronLocal.test(local)
-    && !local.startsWith('.')
-    && !local.endsWith('.')
-    && !local.includes('..')
-    && dominio.length <= 253
-    && patronDominio.test(dominio);
-}
+import {
+  validarBoleta,
+  validarContrasena,
+  validarCorreo,
+  validarNombreUsuario,
+} from '../../lib/validaciones';
 
 export default function NuevoUsuario() {
   const [campos, setCampos] = useState({
@@ -27,6 +16,7 @@ export default function NuevoUsuario() {
     boleta: '',
   });
   const [error, setError] = useState('');
+  const [errores, setErrores] = useState({});
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -40,25 +30,17 @@ export default function NuevoUsuario() {
     setExito('');
     const nombre = campos.nombre.trim();
     const correo = campos.correo.trim();
-
-    if (!/^(?=.*\p{L})[\p{L}\p{M} ]+$/u.test(nombre)) {
-      setError('El nombre solo puede contener letras y espacios; no se permiten números ni símbolos.');
-      return;
+    const contrasena = campos.contrasena.trim();
+    const boleta = campos.boleta.trim();
+    const nuevosErrores = {};
+    if (nombre.length < 3 || nombre.length > 100 || !validarNombreUsuario(nombre)) {
+      nuevosErrores.nombre = 'Escribe de 3 a 100 caracteres, solo letras y espacios; no repitas una palabra más de dos veces.';
     }
-    const vecesPorPalabra = new Map();
-    for (const palabra of nombre.split(/\s+/u)) {
-      const normalizada = palabra.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-      const veces = (vecesPorPalabra.get(normalizada) || 0) + 1;
-      if (veces > 2) {
-        setError('No puedes repetir una misma palabra más de dos veces en el nombre.');
-        return;
-      }
-      vecesPorPalabra.set(normalizada, veces);
-    }
-    if (!validarCorreo(correo)) {
-      setError('Escribe un correo válido de máximo 100 caracteres y sin espacios.');
-      return;
-    }
+    if (!validarCorreo(correo)) nuevosErrores.correo = 'Escribe un correo válido, sin espacios y de máximo 100 caracteres.';
+    if (!validarContrasena(contrasena)) nuevosErrores.contrasena = 'Usa de 8 a 64 caracteres, sin espacios ni emojis.';
+    if (!validarBoleta(boleta)) nuevosErrores.boleta = 'La boleta debe tener exactamente 10 dígitos.';
+    setErrores(nuevosErrores);
+    if (Object.keys(nuevosErrores).length > 0) return;
 
     setEnviando(true);
     try {
@@ -67,12 +49,13 @@ export default function NuevoUsuario() {
         body: JSON.stringify({
           nombre,
           correo,
-          contrasena: campos.contrasena.trim(),
-          boleta: campos.boleta.trim(),
+          contrasena,
+          boleta,
         }),
       });
-      setExito(`Se registró correctamente a ${usuario.nombre}.`);
+      setExito(usuario.mensaje || `Se registró correctamente a ${nombre}.`);
       setCampos({ nombre: '', correo: '', contrasena: '', boleta: '' });
+      setErrores({});
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,7 +66,7 @@ export default function NuevoUsuario() {
   return (
     <main>
       <h1>Registrar usuario</h1>
-      <form onSubmit={registrar} className={`formulario ${estilos.formulario}`}>
+      <form onSubmit={registrar} className={`formulario ${estilos.formulario}`} noValidate>
         <label htmlFor="nombre">Nombre completo</label>
         <input
           id="nombre"
@@ -91,12 +74,11 @@ export default function NuevoUsuario() {
           autoComplete="name"
           minLength={3}
           maxLength={100}
-          pattern="(?=.*\p{L})[\p{L}\p{M} ]+"
-          title="Usa solo letras y espacios. No repitas una palabra más de dos veces."
           required
           value={campos.nombre}
           onChange={actualizar}
         />
+        {errores.nombre && <p className="error">{errores.nombre}</p>}
 
         <label htmlFor="correo">Correo</label>
         <input
@@ -105,11 +87,11 @@ export default function NuevoUsuario() {
           type="email"
           autoComplete="email"
           maxLength={100}
-          title="Escribe un correo válido sin espacios."
           required
           value={campos.correo}
           onChange={actualizar}
         />
+        {errores.correo && <p className="error">{errores.correo}</p>}
 
         <label htmlFor="contrasena">Contraseña</label>
         <input
@@ -123,19 +105,22 @@ export default function NuevoUsuario() {
           value={campos.contrasena}
           onChange={actualizar}
         />
+        {errores.contrasena && <p className="error">{errores.contrasena}</p>}
 
         <label htmlFor="boleta">Boleta</label>
         <input
           id="boleta"
           name="boleta"
           inputMode="numeric"
-          pattern="[0-9]{10}"
           maxLength={10}
-          title="Escribe exactamente 10 dígitos"
           required
           value={campos.boleta}
-          onChange={actualizar}
+          onChange={(e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+            actualizar(e);
+          }}
         />
+        {errores.boleta && <p className="error">{errores.boleta}</p>}
 
         <button type="submit" disabled={enviando}>
           {enviando ? 'Registrando…' : 'Registrar usuario'}

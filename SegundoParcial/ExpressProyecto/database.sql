@@ -33,7 +33,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
 
     CREATE TABLE IF NOT EXISTS asistencias (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        usuario_id INT NULL,
+        usuario_id INT NOT NULL,
         taller_id INT NOT NULL,
         nombre_alumno VARCHAR(100) NULL,
         boleta VARCHAR(10) NULL,
@@ -47,7 +47,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
 
     -- DATOS RANDOM PARA PRUEBAS
 
-    INSERT INTO usuarios (nombre, correo, boleta, rol, contrasena) VALUES
+    INSERT IGNORE INTO usuarios (nombre, correo, boleta, rol, contrasena) VALUES
     ('Control Escolar', 'control@cecyt9.local', '2026000011', 'admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
     ('Ricardo Gomez Cruz', 'ricardo.gomez@alumno.cecyt9.local', '2026000012', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
     ('Patricia Flores Mejia', 'patricia.flores@alumno.cecyt9.local', '2026000013', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
@@ -57,7 +57,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
     ('Laura Mendez Rios', 'laura.mendez@docente.cecyt9.local', '2026000017', 'docente', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
     ('Andres Esparza Nova', 'andres.esparza@alumno.cecyt9.local', '2026000018', 'alumno', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
-    INSERT INTO talleres (nombre, descripcion, instructor, fecha, cupo) VALUES
+    INSERT IGNORE INTO talleres (nombre, descripcion, instructor, fecha, cupo) VALUES
     ('Fundamentos de Linux', 'Introducción a la terminal y comandos básicos del sistema', 'Ing. Cosme Fulanito De Tal', '2026-10-28', 30),
     ('Ciberseguridad 101', 'Principios esenciales de seguridad informática y hacking ético', 'Ing. Max Power Simpson', '2026-10-29', 25),
     ('Desarrollo en Flutter', 'Creación de aplicaciones móviles nativas para iOS y Android', 'Ing. El Chavo Del Ocho', '2026-04-15', 20),
@@ -65,7 +65,7 @@ CREATE DATABASE IF NOT EXISTS cecyt9
     ('Modelado de Datos NoSQL', 'Estructura de bases de datos no relacionales con MongoDB', 'Ing. Ricardo Medina', '2026-05-20', 25),
     ('Frontend con React', 'Desarrollo de interfaces de usuario modernas y basadas en componentes', 'Ing. Gabriela Solis', '2026-06-05', 30);
 
-INSERT INTO asistencias (usuario_id, taller_id) VALUES
+INSERT IGNORE INTO asistencias (usuario_id, taller_id) VALUES
     (2, 2),
     (2, 5),
     (3, 2),

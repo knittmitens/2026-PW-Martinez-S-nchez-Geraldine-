@@ -24,8 +24,14 @@ export default function Perfil() {
 
     setCargando(true);
     try {
-      const usuarios = await pedirJSON('/usuarios');
-      const talleres = await pedirJSON('/talleres');
+      const [usuarios, talleres] = await Promise.all([
+        pedirJSON('/usuarios'),
+        pedirJSON('/talleres'),
+      ]);
+      const cuentaRegistrada = usuarios.some((usuario) => usuario.boleta === b);
+      const alumno = cuentaRegistrada
+        ? await pedirJSON(`/usuarios/boleta/${encodeURIComponent(b)}`)
+        : null;
       // El backend no tiene una ruta "talleres de una boleta": se piden las
       // asistencias de cada taller, todas al mismo tiempo, y Promise.all
       // espera a que lleguen todas (en el mismo orden que talleres).
@@ -50,7 +56,7 @@ export default function Perfil() {
           ? mios[0].asistencias.find((a) => a.boleta === b)
           : null;
 
-      setAlumno(usuarios.find((u) => u.boleta === b) || null);
+      setAlumno(alumno);
       setNombreInscrito(inscripcion ? inscripcion.nombre_alumno : '');
       setMisTalleres(mios);
       setDisponibles(conLugar);

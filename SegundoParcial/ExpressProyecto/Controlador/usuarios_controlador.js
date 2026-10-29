@@ -42,12 +42,12 @@ function esDuplicado(error) {
     return error.code === 'ER_DUP_ENTRY' || error.code === '23505';
 }
 
-async function ListarUsuario(req, res) {
+async function ListarUsuarios(req, res) {
     try {
-        const usuarios = await usuariosModel.listar();
+        const usuarios = await usuariosModel.listarUsuarios();
         res.json(usuarios);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 }
 
@@ -57,7 +57,7 @@ async function obtenerUsuario(req, res) {
         if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.json(usuario);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Error interno del servidor' });
     } 
 }
 
@@ -81,8 +81,8 @@ async function crearUsuario(req, res) {
     }
     try {
         const contrasenaHash = await bcrypt.hash(contrasena, 10);
-        const usuario = await usuariosModel.crearUsuario(nombre, correo, contrasenaHash, boleta);
-        res.status(201).json(usuario);
+        await usuariosModel.crearUsuario(nombre, correo, contrasenaHash, boleta);
+        res.status(201).json({ mensaje: 'Usuario creado correctamente.' });
     } catch (error) {
         if (esDuplicado(error)) return res.status(409).json({ error: 'Correo o boleta ya registrado' });
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -90,13 +90,13 @@ async function crearUsuario(req, res) {
 }
 
 async function obtenerPorBoleta(req, res) {
-    const campos = camposString({ body: { boleta: req.params.boleta } }, ['boleta']);
-    if (!campos || !validarBoleta(campos.boleta)) {
+    const boleta = typeof req.params.boleta === 'string' ? req.params.boleta.trim() : '';
+    if (!validarBoleta(boleta)) {
         return res.status(400).json({ error: 'Boleta inválida; debe contener exactamente 10 dígitos' });
     }
     try {
-        const usuario = await usuariosModel.obtenerPorBoleta(campos.boleta);
-        if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+        const usuario = await usuariosModel.obtenerPorBoleta(boleta);
+        if (!usuario) return res.status(404).json({ error: 'No existe un usuario con esa boleta' });
         res.json({
             id: usuario.id,
             nombre: usuario.nombre,
@@ -123,7 +123,7 @@ try {
     res.status(200).json(usuario);
 } catch (error) {
     if (esDuplicado(error)) return res.status(409).json({ error: 'Correo ya registrado' });
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error interno del servidor' });
 }
 }
 
@@ -133,7 +133,15 @@ async function eliminarUsuario(req, res) {
         if (!eliminar) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.status(204).send();
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 }   
-module.exports = { ListarUsuario, obtenerUsuario, crearUsuario, obtenerPorBoleta, actualizarUsuario, eliminarUsuario };
+module.exports = {
+    ListarUsuarios,
+    ListarUsuario: ListarUsuarios,
+    obtenerUsuario,
+    crearUsuario,
+    obtenerPorBoleta,
+    actualizarUsuario,
+    eliminarUsuario
+};

@@ -14,7 +14,6 @@ export default function DetalleTaller() {
   const [asistencias, setAsistencias] = useState([]);
   const [errorCarga, setErrorCarga] = useState('');
 
-  const [nombre, setNombre] = useState('');
   const [boleta, setBoleta] = useState('');
   const [errorForm, setErrorForm] = useState('');
   const [exito, setExito] = useState('');
@@ -25,10 +24,8 @@ export default function DetalleTaller() {
     // a router.isReady.
     if (!router.isReady) return;
 
-    // Si se llegó desde /perfil, la boleta y el nombre vienen en la URL
-    // (?boleta=...&nombre=...).
+    // Si se llegó desde /perfil, la boleta viene en la URL.
     if (router.query.boleta) setBoleta(String(router.query.boleta));
-    if (router.query.nombre) setNombre(String(router.query.nombre));
 
     cargar();
   }, [router.isReady, id]);
@@ -54,9 +51,7 @@ export default function DetalleTaller() {
     setErrorForm('');
     setExito('');
 
-    const nombreLimpio = nombre.trim();
     const boletaLimpia = boleta.trim();
-    if (!nombreLimpio) return setErrorForm('Escribe tu nombre.');
     if (!validarBoleta(boletaLimpia)) {
       return setErrorForm('La boleta debe tener 10 dígitos.');
     }
@@ -67,16 +62,15 @@ export default function DetalleTaller() {
 
     setEnviando(true);
     try {
+      const usuario = await pedirJSON(`/usuarios/boleta/${encodeURIComponent(boletaLimpia)}`);
       await pedirJSON('/asistencias', {
         method: 'POST',
         body: JSON.stringify({
-          taller_id: id,
-          nombre_alumno: nombreLimpio,
-          boleta: boletaLimpia,
+          taller_id: Number(id),
+          usuario_id: usuario.id,
         }),
       });
-      setExito(`¡Listo! ${nombreLimpio} quedó inscrito(a) en el taller.`);
-      setNombre('');
+      setExito(`¡Listo! ${usuario.nombre} quedó inscrito(a) en el taller.`);
       setBoleta('');
       await cargar();
     } catch (err) {
@@ -137,11 +131,6 @@ export default function DetalleTaller() {
       <section className={estilos.panel}>
         <h2>Inscribirme</h2>
         <form onSubmit={inscribir} className="formulario">
-          <input
-            placeholder="Nombre completo"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
           <input
             placeholder="Boleta (10 dígitos)"
             value={boleta}

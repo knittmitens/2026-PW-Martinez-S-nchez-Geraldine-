@@ -1,6 +1,4 @@
 const pool = require('../db-local');
-const COLUMNAS_PUBLICAS = 'id, usuario_id, taller_id, fecha_asistencia, creado_en';
-
 //consultar lista asistencia
 
 async function listar() {
@@ -35,22 +33,38 @@ async function listar() {
     
  //registra asistencia en taller
 
- async function crear({usuario_id = null, taller_id, nombre_alumno = null, boleta = null}) {
+ async function crear({usuario_id, taller_id}) {
     const [info] = await pool.query(`
-        INSERT INTO asistencias (usuario_id, taller_id, nombre_alumno, boleta)
-        VALUES (?, ?, ?, ?)`,
-    [usuario_id, taller_id, nombre_alumno, boleta]);
+        INSERT INTO asistencias (usuario_id, taller_id)
+        VALUES (?, ?)`,
+    [usuario_id, taller_id]);
     return obtenerPorId(info.insertId);
  }
+
+async function buscarPorUsuarioYTaller(usuario_id, taller_id) {
+    const [filas] = await pool.query(
+        `SELECT id FROM asistencias WHERE usuario_id = ? AND taller_id = ? LIMIT 1`,
+        [usuario_id, taller_id]
+    );
+    return filas[0];
+}
 
  //actualizar asistencia
 
 async function actualizar(id, {usuario_id, taller_id}) {
-    const cambios = Object.entries({usuario_id, taller_id}).filter(([, valor]) => valor !== undefined);
-    if(cambios.length === 0) return obtenerPorId(id);
-    
-    const columnas = cambios.map(([columna]) => `${columna} = ?`).join(', ');
-      const [info] = await pool.query(`UPDATE asistencias SET ${columnas} WHERE id = ?`, [...cambios.map(([, valor]) => valor), id]);
+    if (usuario_id === undefined && taller_id === undefined) return obtenerPorId(id);
+
+    const [info] = await pool.query(
+        `UPDATE asistencias
+         SET usuario_id = CASE WHEN ? = 1 THEN ? ELSE usuario_id END,
+             taller_id = CASE WHEN ? = 1 THEN ? ELSE taller_id END
+         WHERE id = ?`,
+        [
+            usuario_id === undefined ? 0 : 1, usuario_id === undefined ? null : usuario_id,
+            taller_id === undefined ? 0 : 1, taller_id === undefined ? null : taller_id,
+            id
+        ]
+    );
     if(info.affectedRows === 0) return undefined;
     return obtenerPorId(id);
 }
@@ -104,6 +118,7 @@ module.exports = {
     listar,
     obtenerPorId,
     crear,
+    buscarPorUsuarioYTaller,
     actualizar,
     eliminar,
     listarPorUsuario,

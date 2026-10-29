@@ -6,7 +6,8 @@ export default function Menu(){
             <Link href="/" >Inicio</Link>
             <Link href="/talleres" >Talleres</Link>
             <Link href="/talleres/crear">Crear taller</Link>
-            <Link href="/usuarios/nuevo">Registrar usuario</Link>
+            <Link href="/usuarios">Usuarios</Link>
+            <Link href="/asistencia">Asistencia</Link>
             <Link href="/perfil" >Mi perfil</Link>
         </nav>
     );
