@@ -13,9 +13,21 @@ function camposString(req, nombres) {
 }
 
 function validarNombre(nombre) {
-    return nombre.length >= 3
-        && nombre.length <= 100
-        && /^(?=.*\p{L})[\p{L}\p{M} ]+$/u.test(nombre);
+    if (nombre.length < 3
+        || nombre.length > 100
+        || !/^(?=.*\p{L})[\p{L}\p{M} ]+$/u.test(nombre)) {
+        return false;
+    }
+
+    const palabras = nombre.trim().split(/\s+/u);
+    const vecesPorPalabra = new Map();
+    for (const palabra of palabras) {
+        const normalizada = palabra.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+        const veces = (vecesPorPalabra.get(normalizada) || 0) + 1;
+        if (veces > 2) return false;
+        vecesPorPalabra.set(normalizada, veces);
+    }
+    return true;
 }
 
 function validarContrasena(contrasena) {
@@ -56,9 +68,9 @@ async function crearUsuario(req, res) {
     }
     const { nombre, correo, contrasena, boleta } = campos;
     if (!validarNombre(nombre)) {
-        return res.status(400).json({ error: 'El nombre debe tener entre 3 y 100 letras y espacios' });
+        return res.status(400).json({ error: 'El nombre debe tener entre 3 y 100 letras y espacios, sin repetir una palabra más de dos veces' });
     }
-    if (correo.length > 100 || /\s/u.test(correo) || !validarCorreo(correo)) {
+    if (!validarCorreo(correo)) {
         return res.status(400).json({ error: 'Correo inválido; debe tener máximo 100 caracteres' });
     }
     if (!validarContrasena(contrasena)) {

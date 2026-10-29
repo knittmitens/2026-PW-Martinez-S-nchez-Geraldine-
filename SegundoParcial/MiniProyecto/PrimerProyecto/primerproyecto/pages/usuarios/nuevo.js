@@ -2,6 +2,23 @@ import { useState } from 'react';
 import { pedirJSON } from '../../lib/api';
 import estilos from '../../styles/Formularios.module.css';
 
+function validarCorreo(correo) {
+  if (correo.length > 100 || /\s/u.test(correo)) return false;
+  const partes = correo.split('@');
+  if (partes.length !== 2) return false;
+
+  const [local, dominio] = partes;
+  const patronLocal = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
+  const patronDominio = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+  return local.length <= 64
+    && patronLocal.test(local)
+    && !local.startsWith('.')
+    && !local.endsWith('.')
+    && !local.includes('..')
+    && dominio.length <= 253
+    && patronDominio.test(dominio);
+}
+
 export default function NuevoUsuario() {
   const [campos, setCampos] = useState({
     nombre: '',
@@ -21,13 +38,35 @@ export default function NuevoUsuario() {
     e.preventDefault();
     setError('');
     setExito('');
+    const nombre = campos.nombre.trim();
+    const correo = campos.correo.trim();
+
+    if (!/^(?=.*\p{L})[\p{L}\p{M} ]+$/u.test(nombre)) {
+      setError('El nombre solo puede contener letras y espacios; no se permiten números ni símbolos.');
+      return;
+    }
+    const vecesPorPalabra = new Map();
+    for (const palabra of nombre.split(/\s+/u)) {
+      const normalizada = palabra.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+      const veces = (vecesPorPalabra.get(normalizada) || 0) + 1;
+      if (veces > 2) {
+        setError('No puedes repetir una misma palabra más de dos veces en el nombre.');
+        return;
+      }
+      vecesPorPalabra.set(normalizada, veces);
+    }
+    if (!validarCorreo(correo)) {
+      setError('Escribe un correo válido de máximo 100 caracteres y sin espacios.');
+      return;
+    }
+
     setEnviando(true);
     try {
       const usuario = await pedirJSON('/usuarios', {
         method: 'POST',
         body: JSON.stringify({
-          nombre: campos.nombre.trim(),
-          correo: campos.correo.trim(),
+          nombre,
+          correo,
           contrasena: campos.contrasena.trim(),
           boleta: campos.boleta.trim(),
         }),
@@ -52,6 +91,8 @@ export default function NuevoUsuario() {
           autoComplete="name"
           minLength={3}
           maxLength={100}
+          pattern="(?=.*\p{L})[\p{L}\p{M} ]+"
+          title="Usa solo letras y espacios. No repitas una palabra más de dos veces."
           required
           value={campos.nombre}
           onChange={actualizar}
@@ -64,6 +105,7 @@ export default function NuevoUsuario() {
           type="email"
           autoComplete="email"
           maxLength={100}
+          title="Escribe un correo válido sin espacios."
           required
           value={campos.correo}
           onChange={actualizar}
