@@ -1,5 +1,3 @@
-// La aplicación de la demo. server.js la arranca; las pruebas la arrancan con otras configuraciones.
-// Lo que dice "(en clase)" lo programamos juntos, paso por paso. Mientras no esté, esa ruta responde 501.
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
@@ -8,71 +6,159 @@ const { crearModeloUsuarios } = require('./modelos/usuarios.modelo');
 
 const NOMBRE_COOKIE = 'connect.sid';
 
-// Regresa todas las sesiones del almacén (MemoryStore usa callback; MySQLStore regresa una promesa).
 function todasLasSesiones(almacen) {
   return new Promise((resolve, reject) => {
-    const promesa = almacen.all((error, sesiones) => (error ? reject(error) : resolve(sesiones)));
-    if (promesa && typeof promesa.then === 'function') promesa.then(resolve, reject);
+    let resuelta = false;
+    const terminar = (error, sesiones) => {
+      if(resuelta) return;
+      resuelta = true;
+      if(error) reject(error);
+      else resolve(sesiones);
+    };
+
+    try {
+      const resultado = almacen.all((error, sesiones) => terminar(error, sesiones));
+      if(resultado && typeof resultado.then === 'function') {
+        resultado.then((sesiones ) => terminar(error));
+      }
+    }catch(error) {
+      terminar(error);
+    }
+  });
+}
+function crearApp(config, pool){
+  const app = express();
+  const usuarios =  crearModeloUsuarios(pool);
+  const maxAgeMs = config.maxAgeMs ?? 10 * 60 * 1000;
+  const httpOnly = config.httpOnly ?? true;
+  const sameSite = config.sameSite ?? 'lax';
+  const secure = config.secure ?? false;
+  const almacen = config.almacen === 'memoria'
+   ? new session.MemoryStore()
+   : new MySQLStore({ createDatabaseTable: false, clearExpired: false }, pool);
+
+  app.locals.almacen = almacen;
+  app.use(express.json());
+  app.use(session({
+  name: NOMBRE_COOKIE,
+  secret: process.env.SESSION_SECRET || 'secreto-solo-para-la-demo',
+  store: almacen,
+  resave: false,
+  saveUninitialized: false,
+  rolling: config.rolling ?? false,
+  cookie: {
+  maxAge: maxAgeMs,
+  ttpOnly,
+  sameSite,
+  secure,
+},
+  }));
+
+
+  const idCorto = (id) => (id ? `${id.slice(0, 8)}…` : null);
+  const vencida = (sesion) => {
+    const desde = config.rolling ? sesion.ultimoUso : sesion.creada;
+    return !Number.isFinite(desde) || Date.now() - desde > maxAgeMs;
+  };
+  const borrarCookie = (res) => res.clearCookie(NOMBRE_COOKIE, {
+    path: '/',
+    httpOnly,
+    sameSite,
+    secure,
+  });
+
+  function requiereSesion(req, res, next) {
+    if (!req.session.usuario){
+       return res.status(401).json({ error: 'No has iniciado sesion.'});
+    }
+
+if(vencida(req.session)){
+  return req.session.destroy((error) => {
+    if (error) return next (error);
+    borrarCookie(res);
+    return res.status(401).json({error : 'Tu sesion ya expiro; vuelve a iniciar sesion.'});
   });
 }
 
-// Respuesta para lo que todavía no programamos.
-const pendiente = (paso) => (req, res) =>
-  res.status(501).json({ error: `501 · Falta programarlo en clase (paso ${paso})` });
-
-// pool: la conexión a MySQL (db.js). Los usuarios SIEMPRE se leen de MySQL.
-function crearApp(config, pool) {
-  const app = express();
-  app.use(express.json());
-  const usuarios = crearModeloUsuarios(pool);
-
-  // Aquí vive lo que el servidor recuerda de cada sesión:
-  //  - 'mysql':   en la tabla sessions. Sobrevive a un reinicio y la puedes ver en Workbench.
-  //  - 'memoria': en la memoria del proceso. Si el servidor se reinicia, se pierde todo.
-  const almacen =
-    config.almacen === 'memoria'
-      ? new session.MemoryStore()
-      : new MySQLStore({ createDatabaseTable: false, clearExpired: false }, pool);
-  app.locals.almacen = almacen;
-
-  // Paso 1 (en clase): configurar express-session aquí, ANTES de las rutas.
-
-  // Los primeros 8 caracteres del id de sesión, para poder compararlos en pantalla.
-  const idCorto = (id) => (id ? `${id.slice(0, 8)}…` : null);
-
-  // ---------- Middlewares de protección ----------
-
-  // Paso 5 (en clase): función vencida(sesion).
-
-  // 401: "no sé quién eres" (no hay sesión o ya venció).
-  function requiereSesion(req, res, next) {
-    // Paso 1 (en clase)
-    return pendiente(1)(req, res, next);
+req.session.ultimoUso = Date.now();
+return next();
   }
+ 
+function requiereRol(rol) {
+  return (req, res, next) => {
+    if (!req.session.usuario || req.session.usuario.rol !== rol) {
+      return res.status(403).json({
+        error: `Eres ${req.session.usuario?.usuario || 'usuario desconocido'}, pero esta ruta es solo para ${rol}.`,
+      });
+    }
 
-  // 403: "sé quién eres, pero no tienes permiso".
-  function requiereRol(rol) {
-    // Paso 3 (en clase)
-    return pendiente(3);
-  }
+    return next();
+  };
+}
 
-  // ---------- Rutas ----------
+  app.get('/api/config', (req, res) =>{
+res.json({
+      almacen: config.almacen,
+      maxAgeMs,
+      rolling: config.rolling ?? false,
+      httpOnly,
+      sameSite,
+      secure,
+      regenerarAlEntrar: config.regenerarAlEntrar ?? true,
+  });
+});
 
-  app.get('/api/config', (req, res) => res.json(config));
-
-  // Guarda un contador en la sesión. Sirve para ver que la sesión existe antes de entrar
-  // (y para la demostración de fijación de sesión).
   app.post('/api/visita', (req, res) => {
-    if (!req.session) return pendiente(1)(req, res);
     req.session.visitas = (req.session.visitas || 0) + 1;
     res.json({ visitas: req.session.visitas, sesion: idCorto(req.sessionID) });
   });
 
-  // Paso 2 (en clase): iniciar sesión. Paso 7 (en clase): regenerar el id al entrar.
-  app.post('/api/login', pendiente(2));
+  app.post('/api/login', async (req, res, next) => {
+    try{ 
+      const { usuario, contraseña } = req.body || {};
+      const datos = await usuarios.verificar(usuario, contraseña);
+      if(!datos) {
+        return res.status(401).json({ error: 'Usuario o contraseña incorrectos'});
+      }
+      
 
-  // Paso 2 (en clase): cerrar sesión.
-  app.post('/api/logout', pendiente(2));
+    const sesionAntes = req.session.visitas !== undefined ? idCorto(req.sessionID) : null;
+    const visitas = req.session.visitas || 0;
+    const guardarSesion = () => {
+    const ahora = Date.now();
+    req.session.usuario = datos;
+        req.session.visitas = visitas;
+        req.session.creada = ahora;
+        req.session.ultimoUso = ahora;
+        req.session.save((error) => {
+          if (error) return next(error);
+          return res.json({
+            usuario: datos,
+            sesionAntes,
+            sesionDespues: idCorto(req.sessionID),
+    });
+    });
+  };
+
+  if (config.regenerarAlEntrar ?? true){
+    return req.session.regenerate((error) => {
+      if (error) return next(error);
+      return guardarSesion();
+    });
+  }
+  return guardarSesion();
+}catch (error){
+  return next (error);
+}
+  });
+
+  app.post('/api/logout', (req, res, next) => {
+    req.session.destroy((error) => {
+      if (error) return next(error);
+      borrarCookie(res);
+      return res.json({ mensaje: 'Sesión cerrada.' });
+    });
+  });
 
   app.get('/api/sesion', requiereSesion, (req, res) => {
     const desde = config.rolling ? req.session.ultimoUso : req.session.creada;
@@ -85,38 +171,46 @@ function crearApp(config, pool) {
 
   app.get('/api/perfil', requiereSesion, (req, res) => {
     req.session.visitas = (req.session.visitas || 0) + 1;
-    res.json({ mensaje: `Hola, ${req.session.usuario.nombre}`, rol: req.session.usuario.rol, visitas: req.session.visitas });
+    res.json({
+      mensaje: `Hola, ${req.session.usuario.nombre}, rol${req.session.usuario.rol}, visitas: ${req.session.visitas }`,
+       usuario: req.session.usuario,
+      visitas: req.session.visitas,
+    });
   });
 
   app.get('/api/admin/reporte', requiereSesion, requiereRol('admin'), (req, res) => {
-    res.json({ reporte: 'Talleres: 3 · Inscritos: 57 · Cupo libre: 18' });
+    res.json({ 
+      mensaje: 'Acceso de administrador autorizado.',
+      usuario: req.session.usuario,
   });
-
-  // SOLO PARA LA CLASE: muestra lo que el servidor guarda de cada sesión.
-  // Un servidor real NUNCA expone esto.
+    });
+ 
   app.get('/api/diagnostico/sesiones', async (req, res, next) => {
     try {
       const sesiones = await todasLasSesiones(almacen);
-      const lista = Object.entries(sesiones || {}).map(([id, s]) => ({
+      const lista = Object.entries(sesiones || {}).map(([id, sesion]) => ({
         sesion: idCorto(id),
         esLaTuya: id === req.sessionID,
-        usuario: s.usuario ? s.usuario.usuario : '(sin iniciar sesión)',
-        visitas: s.visitas || 0,
-        expira: s.cookie && s.cookie.expires,
+        usuario: sesion.usuario ? sesion.usuario.usuario : '(sin iniciar sesión)',
+        visitas: sesion.visitas || 0,
+        expira: sesion.cookie && sesion.cookie.expires,
       }));
       res.json({ almacen: config.almacen, sesiones: lista });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   });
 
   app.use(express.static(path.join(__dirname, 'public')));
-
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
-  // eslint-disable-next-line no-unused-vars
   app.use((error, req, res, next) => {
     console.error(error);
-    res.status(500).json({ error: 'Error del servidor' });
+    if (res.headersSent) return next(error);
+    const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500
+      ? error.status
+      : 500;
+
+    return res.status(status).json({ error: status === 500 ? 'Error del servidor.' : error.message });
   });
 
   return app;
