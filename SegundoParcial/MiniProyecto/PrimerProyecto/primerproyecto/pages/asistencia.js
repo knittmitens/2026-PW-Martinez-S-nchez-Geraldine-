@@ -24,8 +24,11 @@ async function pedirAPI(ruta, opciones) {
 export default function Asistencia() {
   const [talleres, setTalleres] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [asistencias, setAsistencias] = useState([]);
   const [cargandoDatos, setCargandoDatos] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
+  const [errorAsistencias, setErrorAsistencias] = useState('');
+  const [cargandoAsistencias, setCargandoAsistencias] = useState(true);
   const [tallerId, setTallerId] = useState('');
   const [usuarioId, setUsuarioId] = useState('');
   const [mensaje, setMensaje] = useState(null);
@@ -34,23 +37,41 @@ export default function Asistencia() {
   useEffect(() => {
     async function cargarDatos() {
       try {
-        const [listaTalleres, listaUsuarios] = await Promise.all([
+        const [listaTalleres, listaUsuarios, listaAsistencias] = await Promise.all([
           pedirAPI('/talleres'),
           pedirAPI('/usuarios'),
+          pedirAPI('/asistencias'),
         ]);
-        if (!Array.isArray(listaTalleres) || !Array.isArray(listaUsuarios)) {
+        if (!Array.isArray(listaTalleres) || !Array.isArray(listaUsuarios)
+          || !Array.isArray(listaAsistencias)) {
           throw new Error('No se pudo cargar la información');
         }
         setTalleres(listaTalleres);
         setUsuarios(listaUsuarios);
+        setAsistencias(listaAsistencias);
       } catch {
         setErrorCarga('No se pudo cargar la información');
       } finally {
         setCargandoDatos(false);
+        setCargandoAsistencias(false);
       }
     }
     cargarDatos();
   }, []);
+
+  async function actualizarAsistencias() {
+    setErrorAsistencias('');
+    setCargandoAsistencias(true);
+    try {
+      const lista = await pedirAPI('/asistencias');
+      if (!Array.isArray(lista)) throw new Error('No se pudo cargar la lista de asistencias');
+      setAsistencias(lista);
+    } catch (error) {
+      setErrorAsistencias(error.message);
+    } finally {
+      setCargandoAsistencias(false);
+    }
+  }
 
   async function registrar(evento) {
     evento.preventDefault();
@@ -73,6 +94,7 @@ export default function Asistencia() {
       });
       setTallerId('');
       setUsuarioId('');
+      await actualizarAsistencias();
     } catch (error) {
       setMensaje({ tipo: 'error', texto: error.message });
     } finally {
@@ -138,6 +160,42 @@ export default function Asistencia() {
           <p className={mensaje.tipo === 'exito' ? estilos.exito : estilos.error} role="status">
             {mensaje.texto}
           </p>
+        )}
+      </section>
+
+      <section className={estilos.tarjeta}>
+        <h2>Asistencias registradas</h2>
+        {cargandoAsistencias ? (
+          <p>Cargando asistencias…</p>
+        ) : errorAsistencias ? (
+          <p className={estilos.error} role="alert">{errorAsistencias}</p>
+        ) : asistencias.length === 0 ? (
+          <p>Todavía no hay asistencias registradas.</p>
+        ) : (
+          <div className={estilos.tablaContenedor}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Taller</th>
+                  <th>Usuario</th>
+                  <th>Boleta</th>
+                  <th>Fecha de asistencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {asistencias.map((asistencia) => (
+                  <tr key={asistencia.id}>
+                    <td>{asistencia.taller_nombre}</td>
+                    <td>{asistencia.nombre_alumno || asistencia.usuario_nombre}</td>
+                    <td>{asistencia.boleta}</td>
+                    <td>{asistencia.fecha_asistencia
+                      ? new Date(asistencia.fecha_asistencia).toLocaleString()
+                      : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </main>

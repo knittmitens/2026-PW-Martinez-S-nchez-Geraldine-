@@ -58,3 +58,20 @@
   border-radius: 6px;
   background: #f3f4f6;
 }
+
+.tablaContenedor {
+  overflow-x: auto;
+}
+
+.tablaContenedor table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.tablaContenedor th,
+.tablaContenedor td {
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  text-align: left;
+}

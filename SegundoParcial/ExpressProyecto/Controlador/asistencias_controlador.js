@@ -43,10 +43,10 @@ async function crearAsistencia(req, res) {
         return res.status(400).json({ error: 'El cuerpo debe ser un objeto JSON' });
     }
     const { usuario_id, taller_id } = body;
-    if (!Number.isInteger(taller_id) || taller_id <= 0) {
+    if (!Number.isSafeInteger(taller_id) || taller_id <= 0 || taller_id > 2147483647) {
         return res.status(400).json({ error: 'El taller debe ser un entero positivo' });
     }
-    if (!Number.isInteger(usuario_id) || usuario_id <= 0) {
+    if (!Number.isSafeInteger(usuario_id) || usuario_id <= 0 || usuario_id > 2147483647) {
         return res.status(400).json({ error: 'El usuario debe ser un entero positivo' });
     }
 

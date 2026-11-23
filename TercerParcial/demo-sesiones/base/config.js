@@ -21,4 +21,12 @@ module.exports = {
 
   // true: al iniciar sesión el servidor cambia el id de la sesión (protege contra la fijación de sesión).
   regenerarAlEntrar: true,
+
+  // ---------- JWT (semana 13) ----------
+  // Cuántos segundos dura el token. 5 minutos = 5 * 60
+  jwtExpiraSeg: 5 * 60,
+
+  // true: al cerrar sesión el servidor anota el token en la lista negra (tokens_revocados) y ya no lo acepta.
+  // false: el servidor no guarda nada; el token sigue sirviendo hasta que venza.
+  jwtRevocar: true, // CORREGIDO: decía  true;  (punto y coma dentro del objeto → SyntaxError)
 };
